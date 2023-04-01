@@ -1,0 +1,263 @@
+How to make simple file-upload/download web app suing react
+ChatGPT
+To create a simple file-upload/download web app using React you can follow the below steps:
+
+Step 1: Setting up the environment
+
+Create a new React application using create-react-app framework.
+Install express, formidable and multer packages using the npm command.
+Copy
+Insert
+New
+npx create-react-app my-app
+cd my-app
+npm install express formidable multer --save
+Step 2: Creating an upload page
+
+Create an upload component rendering HTML for file input and submit button.
+Create a function that listens to click events on the submit button and makes an API call to send the file data to the server.
+Copy
+Insert
+New
+import axios from "axios";
+
+export default function Upload() {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData();
+    formData.append("file", e.target.files);
+
+    try {
+      await axios.post("/api/upload", formData);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input type="file" onChange={handleSubmit} />
+      <button type="submit">Upload</button>
+    </form>
+  );
+}
+Step 3: Creating a download page
+
+Create a download component which retrieves a file name list from the server and shows them in a list element.
+When clicking on any of the files, retrieve the file and let the user download it.
+Copy
+Insert
+New
+import { useState } from "react";
+import axios from "axios";
+
+export default function Download() {
+  const [fileList, setFileList] = useState([]);
+
+  const fetchFiles = async () => {
+    try {
+      const { data } = await axios.get("/api/files");
+      setFileList(data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleDownload = async (fileName) => {
+    const link = document.createElement("a");
+    link.href = `/api/download/${fileName}`;
+    link.target = "_blank";
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  return (
+    <>
+      <button onClick={fetchFiles}>Load Files</button>
+
+      <ul>
+        {fileList.map((fileName) => (
+          <li key={fileName} onClick={() => handleDownload(fileName)}>
+            {fileName}
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+Step 4: Setting up the server
+
+Create a new file server.js, which will be used to serve uploaded files as well.
+Initialize express instance and listen on a specific port.
+Set up API endpoints with multer and fs for handling file uploads, removals, and retrieval.
+Copy
+Insert
+New
+const express = require("express");
+const app = express();
+const fs = require("fs");
+const multer = require("multer");
+
+// Directory where uploaded files will be saved
+const UPLOAD_DIR = "./uploads";
+
+// Remove all existent files if any
+if (!fs.existsSync(UPLOAD_DIR)) {
+  fs.mkdirSync(UPLOAD_DIR);
+} else {
+  fs.readdirSync(UPLOAD_DIR).forEach((file) => {
+    fs.unlinkSync(`${UPLOAD_DIR}/${file}`);
+  });
+}
+
+app.use(express.static("public"));
+
+const storage = multer.diskStorage({
+  destination(req, file, cb) {
+    cb(null, "./uploads/");
+  },
+  filename(req, file, cb) {
+    cb(null, file.originalname);
+  },
+});
+
+const upload = multer({ storage });
+
+app.post("/api/upload", upload.single("file"), (req, res) => {
+  console.log(`Upload Success: ${req.file.originalname}`);
+  res.send();
+});
+
+app.get("/api/files", (_, res) => {
+  const fileList = fs.readdirSync(UPLOAD_DIR);
+  res.send(fileList);
+});
+
+app.get("/api/download/:fileName", (req, res) => {
+  const fileName = req.params.fileName;
+  const filePath = `${UPLOAD_DIR}/${fileName}`;
+
+  if (!fs.existsSync(filePath)) {
+    res.status(404).send("File not found");
+    return;
+  }
+
+  res.download(filePath);
+});
+
+const port = process.env.PORT || 5000;
+app.listen(port, () => {
+  console.log(`Server is listening on port ${port}`);
+});
+Step 5: Creating and routing webpages
+
+Create two webpage components containing the previously created Upload and Download components.
+Add routes using react-router-dom, allowing easy navigation between pages.
+Copy
+Insert
+New
+import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
+import "./App.css";
+import Download from "./Download";
+import Upload from "./Upload";
+
+export default function App() {
+  return (
+    <Router>
+      <div className="App">
+        <Link to="/upload">Upload page</Link> | <Link to="/download">Download page</Link>
+
+        <Switch>
+          <Route path="/upload">
+            <Upload />
+          </ 
+You
+
+continue
+ChatGPT
+Sure, here are the steps to make a simple file-upload/download web app using React:
+
+Create a new React project using create-react-app or any other way of your choice.
+Install axios and express-fileupload packages by running the following command.
+Copy
+Insert
+New
+npm install axios express-fileupload
+Create two components- UploadFile and DownloadFile.
+In the UploadFile component, create a form with an input element of type "file".
+Handle the onChange event of the input element, capture the selected file and set it in the state.
+Write a function that will handle the submit event of the form. In this function, create a new instance of the FormData class and append the selected file to it. Then, use the Axios library to send a POST request to the server along with the FormData object. The server will then store the uploaded file on disk using express-fileupload package.
+In the DownloadFile component, create a button and add an onClick event handler to it.
+In the onclick function, use Axios to send a GET request to the server, requesting the file with a specific filename.
+On receival from the Server-Side, convert the returned data into a blob format and create a temporary download URL for the file.
+Attach the download URL to an anchor tag with download attribute set, which will enable the users to download the file when they click this link.
+Your simple file-upload/download web app is now ready. You can customize its appearance and functionality as per your requirements.
+
+Here's a sample code snippet to get you started:
+
+UploadFile.js
+
+Copy
+Insert
+New
+import axios from 'axios';
+
+function UploadFile() {
+  const [selectedFile, setSelectedFile] = useState(null);
+
+  const handleOnChange = (event) => {
+    setSelectedFile(event.target.files[0])
+  };
+
+  const handleOnSubmit = async (event) => {
+    event.preventDefault();
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    try {
+      await axios.post('/api/upload', formData);
+      alert('File uploaded successfully');
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  return (
+    <div>
+      <form onSubmit={handleOnSubmit}>
+        <div>
+          <input type="file" onChange={handleOnChange} />
+        </div>
+        <button type="submit">Upload File</button>
+      </form>
+    </div>
+  );
+}
+DownloadFile.js
+
+Copy
+Insert
+New
+import axios from 'axios';
+
+function DownloadFile() {
+  const handleOnClick = async () => {
+    const result = await axios.get('/api/download/filename.txt', { responseType: 'blob' });
+    const downloadUrl = window.URL.createObjectURL(new Blob([result.data]));
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.setAttribute('download', 'filename.txt');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
+  return (
+    <div>
+      <button onClick={handleOnClick}>Download File</button>
+    </div>
+  );
+}
+Hope this helps! If you have any follow-up questions, feel free to ask.
